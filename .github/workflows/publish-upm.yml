@@ -68,6 +68,8 @@ jobs:
     runs-on: self-hosted
     container:
       image: ghcr.io/ksp1retooled/ksp-ci:1
+      # The runner's own user, so that it can clean up what the job leaves in its work folders.
+      options: --user 1003:1003
     permissions:
       contents: write
     steps:
