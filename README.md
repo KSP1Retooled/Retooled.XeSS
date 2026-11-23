@@ -63,7 +63,7 @@ Native~/build.ps1
 loaded the plugin, because it keeps the DLL open.
 
 On GitHub, the Native plug-in workflow builds `RetooledXeSS.dll` and commits it whenever the plugin's source changes.
-Publishing a release packs the package with Intel's DLLs and adds it to the KSP1Retooled registry.
+Publishing a release packs the package with Intel's DLLs, signs it and adds it to the KSP1Retooled registry.
 
 ## Licenses
 

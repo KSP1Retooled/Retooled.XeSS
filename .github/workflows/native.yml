@@ -58,34 +58,11 @@ jobs:
           retention-days: 7
 
   commit:
-    name: Commit the binary
     needs: build
     if: github.ref_type == 'branch'
-    runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      # Check out the branch rather than the commit that started the run, so that the binary lands on the branch's
-      # current head. A push made with this workflow's token does not start another run.
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.ref_name }}
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: native
-          path: Plugins/x86_64
-
-      - run: |
-          git add Plugins/x86_64/RetooledXeSS.dll
-          if git diff --cached --quiet; then
-            echo "The binary did not change."
-            exit 0
-          fi
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m "Build the native plug-in from ${GITHUB_SHA::10}"
-          for attempt in 1 2 3; do
-            git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
-            git pull --rebase origin "$GITHUB_REF_NAME"
-          done
-          exit 1
+    uses: KSP1Retooled/upm/.github/workflows/commit-binaries.yml@main
+    with:
+      artifacts: native
+      path: Plugins/x86_64
