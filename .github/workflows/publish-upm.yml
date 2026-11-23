@@ -65,11 +65,8 @@ jobs:
   sign:
     name: Sign the package
     needs: pack
-    runs-on: self-hosted
-    container:
-      image: ghcr.io/ksp1retooled/ksp-ci:1
-      # The runner's own user, so that it can clean up what the job leaves in its work folders.
-      options: --user 1003:1003
+    # A job of its own, so the signing key never reaches the job that downloads the SDK and packs the package.
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -87,7 +84,6 @@ jobs:
           key: ${{ secrets.UPM_SERVICE_ACCOUNT_KEY }}
 
       - name: Attach the package to the release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED: ${{ steps.sign.outputs.path }}
