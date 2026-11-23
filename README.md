@@ -3,7 +3,7 @@
 Intel XeSS Super Resolution for Unity's built-in render pipeline on Windows x64.
 
 XeSS records its work into the graphics API's own command list, which C# can't reach. This package includes a small
-native plugin, `RetooledXeSS.dll`, that Unity calls on the render thread. The plugin loads the SDK's `libxess.dll` from
+native plugin, `Retooled.XeSS.Native.dll`, that Unity calls on the render thread. The plugin loads the SDK's `libxess.dll` from
 its own folder and makes every SDK call there. `XessContext` is the C# side.
 
 ## Graphics APIs
@@ -59,10 +59,10 @@ Native~/build.ps1
 ```
 
 `fetch-sdk.ps1` downloads the SDK release, puts its headers in `Native~/xess` and its runtime DLLs in
-`Plugins/x86_64`. `build.ps1` copies `RetooledXeSS.dll` into `Plugins/x86_64`. Close the Unity editor first if it has
+`Plugins/x86_64`. `build.ps1` copies `Retooled.XeSS.Native.dll` into `Plugins/x86_64`. Close the Unity editor first if it has
 loaded the plugin, because it keeps the DLL open.
 
-On GitHub, the Native plug-in workflow builds `RetooledXeSS.dll` and commits it whenever the plugin's source changes.
+On GitHub, the Native plug-in workflow builds `Retooled.XeSS.Native.dll` and commits it whenever the plugin's source changes.
 Publishing a release packs the package with Intel's DLLs, signs it and adds it to the KSP1Retooled registry.
 
 ## Licenses

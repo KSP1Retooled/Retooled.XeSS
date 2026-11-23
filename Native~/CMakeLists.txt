@@ -25,5 +25,6 @@ target_include_directories(RetooledXeSS PRIVATE
     ${Vulkan_INCLUDE_DIR}
 )
 target_compile_definitions(RetooledXeSS PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX VK_NO_PROTOTYPES)
+set_target_properties(RetooledXeSS PROPERTIES OUTPUT_NAME Retooled.XeSS.Native)
 
 install(TARGETS RetooledXeSS RUNTIME DESTINATION .)

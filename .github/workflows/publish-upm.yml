@@ -36,7 +36,9 @@ jobs:
             Native~/CMakeLists.txt
             Native~/src
             Native~/unity
-          binaries: Plugins/x86_64/RetooledXeSS.dll
+            Native~/build.ps1
+            Native~/fetch-sdk.ps1
+          binaries: Plugins/x86_64/Retooled.XeSS.Native.dll
 
       # The repository doesn't carry Intel's runtime, so the package gets it from the SDK release.
       - name: Get the XeSS SDK
@@ -47,8 +49,8 @@ jobs:
         uses: KSP1Retooled/upm/pack@main
         with:
           expect: |
-            Plugins/x86_64/RetooledXeSS.dll
-            Plugins/x86_64/RetooledXeSS.dll.meta
+            Plugins/x86_64/Retooled.XeSS.Native.dll
+            Plugins/x86_64/Retooled.XeSS.Native.dll.meta
             Plugins/x86_64/libxess.dll
             Plugins/x86_64/libxess.dll.meta
             Plugins/x86_64/libxess_dx11.dll

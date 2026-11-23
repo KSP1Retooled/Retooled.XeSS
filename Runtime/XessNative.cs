@@ -3,10 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace Retooled.XeSS;
 
-/// <summary>Declarations for RetooledXeSS.dll, the native plugin in <c>Native~</c>.</summary>
+/// <summary>Declarations for Retooled.XeSS.Native.dll, the native plugin in <c>Native~</c>.</summary>
 internal static class XessNative
 {
-    const string Plugin = "RetooledXeSS";
+    const string Plugin = "Retooled.XeSS.Native";
 
     /// <summary>Render-thread events, handled by <c>OnRenderEvent</c> in Plugin.cpp.</summary>
     internal enum Event

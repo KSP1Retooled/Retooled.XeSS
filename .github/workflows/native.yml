@@ -1,6 +1,6 @@
 name: Native plug-in
 
-# Whenever the native plug-in's source changes, build RetooledXeSS.dll and commit it to the branch that changed.
+# Whenever the native plug-in's source changes, build Retooled.XeSS.Native.dll and commit it to the branch that changed.
 
 on:
   push:
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: native
-          path: Plugins/x86_64/RetooledXeSS.dll
+          path: Plugins/x86_64/Retooled.XeSS.Native.dll
           retention-days: 7
 
   commit:

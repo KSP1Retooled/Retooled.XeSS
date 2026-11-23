@@ -1,4 +1,4 @@
-# Builds RetooledXeSS.dll and copies it into Plugins/x86_64. Needs CMake, Ninja, LLVM's clang-cl, the Windows SDK and
+# Builds Retooled.XeSS.Native.dll and copies it into Plugins/x86_64. Needs CMake, Ninja, LLVM's clang-cl, the Windows SDK and
 # the Vulkan headers, from the Vulkan SDK or from a Vulkan-Headers checkout passed as -VulkanInclude.
 # A Unity editor that has loaded the plugin keeps the DLL open, so close it before building.
 param(
@@ -27,5 +27,5 @@ if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed' }
 cmake --build $build
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 
-Copy-Item (Join-Path $build 'RetooledXeSS.dll') $plugins -Force
-Write-Host "Copied RetooledXeSS.dll to $(Resolve-Path $plugins)"
+Copy-Item (Join-Path $build 'Retooled.XeSS.Native.dll') $plugins -Force
+Write-Host "Copied Retooled.XeSS.Native.dll to $(Resolve-Path $plugins)"
