@@ -1,0 +1,8 @@
+{
+  "name": "io.github.ksp1retooled.xess",
+  "version": "0.1.0",
+  "displayName": "XeSS",
+  "description": "Intel XeSS Super Resolution for Unity's built-in render pipeline on Windows, through a native plugin that runs the SDK on Unity's render thread.",
+  "unity": "6000.7",
+  "dependencies": {}
+}

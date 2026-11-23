@@ -1,0 +1,91 @@
+name: Native plug-in
+
+# Whenever the native plug-in's source changes, build RetooledXeSS.dll and commit it to the branch that changed.
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'Native~/CMakeLists.txt'
+      - 'Native~/src/**'
+      - 'Native~/unity/**'
+      - 'Native~/build.ps1'
+      - 'Native~/fetch-sdk.ps1'
+      - '.github/workflows/native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch replaces an older run, so the binary always comes from the newest source.
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The plug-in only needs the Vulkan headers, so it builds against Khronos' header repository instead of the SDK.
+  VULKAN_HEADERS: v1.4.363
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      # Puts the Windows SDK, and the CMake and Ninja that come with Visual Studio, on the path for clang-cl.
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Get the XeSS SDK headers and the Vulkan headers
+        run: |
+          Native~/fetch-sdk.ps1
+          git clone --quiet --depth 1 --branch $env:VULKAN_HEADERS https://github.com/KhronosGroup/Vulkan-Headers.git "$env:RUNNER_TEMP/vulkan-headers"
+
+      - name: Build
+        run: |
+          $env:PATH = "C:\Program Files\LLVM\bin;$env:PATH"
+          Native~/build.ps1 -VulkanInclude "$env:RUNNER_TEMP/vulkan-headers/include"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native
+          path: Plugins/x86_64/RetooledXeSS.dll
+          retention-days: 7
+
+  commit:
+    name: Commit the binary
+    needs: build
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Check out the branch rather than the commit that started the run, so that the binary lands on the branch's
+      # current head. A push made with this workflow's token does not start another run.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: native
+          path: Plugins/x86_64
+
+      - run: |
+          git add Plugins/x86_64/RetooledXeSS.dll
+          if git diff --cached --quiet; then
+            echo "The binary did not change."
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "Build the native plug-in from ${GITHUB_SHA::10}"
+          for attempt in 1 2 3; do
+            git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            git pull --rebase origin "$GITHUB_REF_NAME"
+          done
+          exit 1

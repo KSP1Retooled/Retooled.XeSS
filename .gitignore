@@ -1,0 +1,6 @@
+/Native~/build/
+
+# Intel's SDK files come from the XeSS SDK release, not from this repo
+/Native~/xess/
+/Plugins/x86_64/libxess*.dll
+/Plugins/x86_64/libxess*.dll.meta
