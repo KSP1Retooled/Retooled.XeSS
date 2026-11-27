@@ -42,6 +42,9 @@ internal static class XessNative
     internal static extern int RetooledXeSS_GetRenderer();
 
     [DllImport(Plugin)]
+    internal static extern int RetooledXeSS_IsVulkanDeviceReady();
+
+    [DllImport(Plugin)]
     internal static extern XessResult RetooledXeSS_GetSdkVersion(out int major, out int minor, out int patch);
 
     [DllImport(Plugin)]

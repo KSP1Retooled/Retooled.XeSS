@@ -11,10 +11,20 @@ its own folder and makes every SDK call there. `XessContext` is the C# side.
 - Direct3D 12: supported on any GPU with Shader Model 6.4.
 - Direct3D 11: on Intel Arc, through XeSS's own Direct3D 11 runtime. On other GPUs, the plugin runs XeSS on a
   Direct3D 12 device next to Unity's and copies the textures across, which costs some time each frame.
-- Vulkan: works in the editor. The plugin has to hook Unity's Vulkan device creation, so it must load before the
-  device exists. The editor loads it on startup, but players load it later, so contexts fail with
-  `ErrorUnsupported` there.
+- Vulkan: the plugin has to hook Unity's Vulkan device creation, so it must load before the device exists. The
+  editor loads it on startup. A player that loads it later needs a Vulkan layer, described below. Without the hook
+  contexts fail with `ErrorUnsupported`.
 - OpenGL, Linux and macOS: XeSS doesn't support them.
+
+### Vulkan in a player
+
+The plugin is marked to load on startup. Where a player loads it before Unity sets up Vulkan, Unity runs the hook as
+the editor does. Where it loads later, an application can supply a Vulkan layer of its own that loads
+`Retooled.XeSS.Native.dll` when the instance is created and calls its `RetooledVulkanIntercept` export: it takes the
+next `vkGetInstanceProcAddr` in the layer's chain and returns one whose `vkCreateInstance` and `vkCreateDevice` add
+what XeSS needs, or null if Unity has the hook already. A layer sees every instance in the process and outlives none
+of them unless it pins itself, so it should hook only the application's own device.
+`XessContext.VulkanDeviceReady` says whether the device has what XeSS needs.
 
 ## Use
 

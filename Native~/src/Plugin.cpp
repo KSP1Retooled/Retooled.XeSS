@@ -369,6 +369,12 @@ extern "C"
         return renderer;
     }
 
+    // Whether XeSS can run on Unity's Vulkan device. Meaningful once Unity has created the device.
+    UNITY_INTERFACE_EXPORT int RetooledXeSS_IsVulkanDeviceReady()
+    {
+        return VulkanDeviceReady() ? 1 : 0;
+    }
+
     UNITY_INTERFACE_EXPORT int RetooledXeSS_GetSdkVersion(int* major, int* minor, int* patch)
     {
         const XessLibrary* xess = LoadXessLibrary();
