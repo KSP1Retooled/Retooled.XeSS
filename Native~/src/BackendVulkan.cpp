@@ -20,10 +20,55 @@ namespace
     PFN_vkCreateDevice loaderCreateDevice;
     VkInstance createdInstance;
     bool deviceReady;
+    // Who installed the hooks: Unity, when the plugin loaded before Unity set up Vulkan, or else the game's Vulkan
+    // layer. Each takes the hooks only if the other hasn't, because they hold one chain of functions to call on to.
+    bool hookedByUnity;
+    bool hookedByLayer;
 
     void Log(UnityLogType type, const std::string& message)
     {
         PluginLog(type, message);
+    }
+
+    std::vector<VkPhysicalDevice> PhysicalDevices(PFN_vkEnumeratePhysicalDevices enumerate)
+    {
+        std::vector<VkPhysicalDevice> devices;
+        uint32_t count = 0;
+        if (enumerate == nullptr || enumerate(createdInstance, &count, nullptr) != VK_SUCCESS)
+            return devices;
+
+        devices.resize(count);
+        if (enumerate(createdInstance, &count, devices.data()) < VK_SUCCESS)
+            count = 0;
+        devices.resize(count);
+        return devices;
+    }
+
+    // The SDK calls the Vulkan loader's own functions, which take the handles an application sees. Unity's hook gets
+    // those. Inside a layer chain a physical device has another handle, the one the loader's handle stands for, and
+    // the loader rejects it. Both levels list the instance's devices in the same order, which pairs them up.
+    VkPhysicalDevice ApplicationHandle(VkPhysicalDevice physicalDevice)
+    {
+        if (!hookedByLayer)
+            return physicalDevice;
+
+        HMODULE loader = GetModuleHandleW(L"vulkan-1.dll");
+        if (loader == nullptr)
+            return VK_NULL_HANDLE;
+        std::vector<VkPhysicalDevice> inLayer = PhysicalDevices(reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(
+            loaderGetInstanceProcAddr(createdInstance, "vkEnumeratePhysicalDevices")));
+        std::vector<VkPhysicalDevice> inApplication = PhysicalDevices(reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(
+            GetProcAddress(loader, "vkEnumeratePhysicalDevices")));
+        if (inLayer.size() != inApplication.size())
+            return VK_NULL_HANDLE;
+
+        for (size_t i = 0; i < inLayer.size(); i++)
+        {
+            if (inLayer[i] == physicalDevice)
+                return inApplication[i];
+        }
+
+        return VK_NULL_HANDLE;
     }
 
     void AddMissing(std::vector<const char*>& names, uint32_t count, const char* const* added)
@@ -77,8 +122,9 @@ namespace
         const XessLibrary* xess = LoadXessLibrary();
         uint32_t count = 0;
         const char* const* required = nullptr;
-        if (createdInstance == VK_NULL_HANDLE || xess == nullptr
-            || xess->VKGetRequiredDeviceExtensions(createdInstance, physicalDevice, &count, &required) != XESS_RESULT_SUCCESS)
+        VkPhysicalDevice sdkDevice = createdInstance != VK_NULL_HANDLE ? ApplicationHandle(physicalDevice) : VK_NULL_HANDLE;
+        if (sdkDevice == VK_NULL_HANDLE || xess == nullptr
+            || xess->VKGetRequiredDeviceExtensions(createdInstance, sdkDevice, &count, &required) != XESS_RESULT_SUCCESS)
             return loaderCreateDevice(physicalDevice, info, allocator, device);
 
         std::vector<const char*> extensions(info->ppEnabledExtensionNames,
@@ -94,7 +140,7 @@ namespace
             features2.pNext = chain;
             chain = &features2;
         }
-        if (xess->VKGetRequiredDeviceFeatures(createdInstance, physicalDevice, &chain) != XESS_RESULT_SUCCESS)
+        if (xess->VKGetRequiredDeviceFeatures(createdInstance, sdkDevice, &chain) != XESS_RESULT_SUCCESS)
             return loaderCreateDevice(physicalDevice, info, allocator, device);
 
         VkDeviceCreateInfo patched = *info;
@@ -127,10 +173,19 @@ namespace
         return loaderGetInstanceProcAddr(instance, name);
     }
 
-    PFN_vkGetInstanceProcAddr UNITY_INTERFACE_API InterceptInitialization(PFN_vkGetInstanceProcAddr getInstanceProcAddr, void*)
+    PFN_vkGetInstanceProcAddr Intercept(PFN_vkGetInstanceProcAddr getInstanceProcAddr)
     {
         loaderGetInstanceProcAddr = getInstanceProcAddr;
         return &GetInstanceProcAddr;
+    }
+
+    PFN_vkGetInstanceProcAddr UNITY_INTERFACE_API InterceptInitialization(PFN_vkGetInstanceProcAddr getInstanceProcAddr, void*)
+    {
+        if (hookedByLayer)
+            return getInstanceProcAddr;
+
+        hookedByUnity = true;
+        return Intercept(getInstanceProcAddr);
     }
 
     // Upscaling
@@ -160,7 +215,8 @@ namespace
             if (!deviceReady)
             {
                 Log(kUnityLogTypeWarning,
-                    "the Vulkan device was created without XeSS's extensions, because the plugin loaded too late");
+                    "the Vulkan device was created without XeSS's extensions: the plugin loaded after the device, and "
+                    "no Vulkan layer loaded it earlier");
                 return XESS_RESULT_ERROR_UNSUPPORTED;
             }
             return xess->VKCreateContext(instance.instance, instance.physicalDevice, instance.device, handle);
@@ -299,11 +355,35 @@ namespace
 
 void InterceptVulkanInitialization(IUnityInterfaces* interfaces)
 {
+    if (hookedByLayer)
+        return;
+
     // Registering fails once Unity has created its device, whatever the API. The Vulkan backend reports that case
     // when a context is created.
     auto* unity = UNITY_GET_INTERFACE(interfaces, IUnityGraphicsVulkanV2);
     if (unity != nullptr)
         unity->AddInterceptInitialization(&InterceptInitialization, nullptr, 0);
+}
+
+bool VulkanDeviceReady()
+{
+    return deviceReady;
+}
+
+extern "C"
+{
+    // A player may load plugins after it has created its Vulkan device, which is too late for Unity's own hook. A
+    // Vulkan layer that loads this module earlier calls this instead, with the next vkGetInstanceProcAddr in its
+    // chain, and creates the instance and the device through the function returned. Null means that Unity has the
+    // hooks already and the layer should leave this module alone.
+    UNITY_INTERFACE_EXPORT PFN_vkGetInstanceProcAddr RetooledVulkanIntercept(PFN_vkGetInstanceProcAddr next)
+    {
+        if (hookedByUnity)
+            return nullptr;
+
+        hookedByLayer = true;
+        return Intercept(next);
+    }
 }
 
 std::unique_ptr<Backend> CreateVulkanBackend(IUnityInterfaces* interfaces)
