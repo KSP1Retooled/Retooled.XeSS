@@ -13,7 +13,7 @@ namespace Retooled.XeSS;
 ///
 /// Creating a context starts building the SDK's pipelines in the background. Call <see cref="Poll"/> until
 /// <see cref="XessStatus.PipelineResult"/> is <see cref="XessResult.Success"/>, then <see cref="Initialize"/>.
-/// Direct3D 11 and 12 are supported, and Vulkan when the plugin loaded before the graphics device was created. Other
+/// Direct3D 11 and 12 are supported, and Vulkan when <see cref="VulkanDeviceReady"/>. Other
 /// graphics APIs fail with <see cref="XessResult.ErrorUnsupported"/>.
 /// </remarks>
 public sealed class XessContext : IDisposable
@@ -57,6 +57,13 @@ public sealed class XessContext : IDisposable
 
     /// <summary>The graphics API the plugin saw at device creation.</summary>
     public static GraphicsDeviceType Renderer => (GraphicsDeviceType)XessNative.RetooledXeSS_GetRenderer();
+
+    /// <summary>
+    /// Whether Unity's Vulkan device was created with the extensions and features XeSS needs. The plugin adds them
+    /// when it is loaded before the device, which is why it is marked to load on startup. Without them a context on
+    /// Vulkan fails with <see cref="XessResult.ErrorUnsupported"/>.
+    /// </summary>
+    public static bool VulkanDeviceReady => XessNative.RetooledXeSS_IsVulkanDeviceReady() != 0;
 
     /// <summary>The minimum level of SDK messages written to the Unity log, for contexts created afterwards.</summary>
     public static XessLogLevel LogLevel
