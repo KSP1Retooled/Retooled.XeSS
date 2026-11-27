@@ -85,3 +85,6 @@ std::unique_ptr<Backend> CreateD3D11On12Backend(IUnityInterfaces* interfaces);
 // Hooks Unity's Vulkan instance and device creation to add what XeSS needs. It only takes effect if called from
 // UnityPluginLoad before Unity creates the device, so the plugin must load on startup.
 void InterceptVulkanInitialization(IUnityInterfaces* interfaces);
+
+// Whether Unity's Vulkan device was created through the hooks, with XeSS's extensions and features.
+bool VulkanDeviceReady();

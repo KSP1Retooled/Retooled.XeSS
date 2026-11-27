@@ -306,6 +306,11 @@ void InterceptVulkanInitialization(IUnityInterfaces* interfaces)
         unity->AddInterceptInitialization(&InterceptInitialization, nullptr, 0);
 }
 
+bool VulkanDeviceReady()
+{
+    return deviceReady;
+}
+
 std::unique_ptr<Backend> CreateVulkanBackend(IUnityInterfaces* interfaces)
 {
     auto* unity = UNITY_GET_INTERFACE(interfaces, IUnityGraphicsVulkanV2);
